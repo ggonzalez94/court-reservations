@@ -15,7 +15,7 @@ export function API({ stack }: StackContext) {
         },
         routes: {
             'GET /': 'packages/functions/src/lambda.handler',
-            'GET /courts': 'packages/functions/src/courts.handler',
+            'GET /courts': 'packages/functions/src/courts/get.handler',
             'GET /todo': 'packages/functions/src/todo.list',
             'POST /todo': 'packages/functions/src/todo.create',
         },
