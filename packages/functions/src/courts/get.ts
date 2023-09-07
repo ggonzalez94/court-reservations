@@ -1,15 +1,17 @@
-import { ApiHandler, useQueryParams } from 'sst/node/api';
 import axios from 'axios';
+import { wrapper } from 'axios-cookiejar-support';
+import { CookieJar } from 'tough-cookie';
+import dayjs from 'dayjs';
+import Joi from 'joi';
+import { ApiHandler, useQueryParams } from 'sst/node/api';
 import { courts } from '@padel-reservations/core/courts';
+import { baseUrl } from '../reva/constants';
 import {
-    RevaEstablishment,
-    RevaResponse,
     AvailableEstablishment,
     GetCourtsRequest,
     GetCourtsResponse,
 } from './types';
-import dayjs from 'dayjs';
-import Joi from 'joi';
+import { RevaResponse, Establishment } from '../reva/types';
 
 export const handler = ApiHandler(async (event) => {
     // Validate the request
@@ -23,8 +25,6 @@ export const handler = ApiHandler(async (event) => {
     });
 
     const { error, value } = queryParamSchema.validate(params);
-    const { duration, date } = value as GetCourtsRequest;
-
     if (error) {
         //TODO: define 400 error response schema
         return {
@@ -35,25 +35,13 @@ export const handler = ApiHandler(async (event) => {
             }),
         };
     }
-
+    const { duration, date } = value as GetCourtsRequest;
     const dateObj = dayjs(date);
-    const establishments: RevaEstablishment[] = [];
 
-    // Get the available courts for all establishments
-    for (const court of courts) {
-        const response = await getCourtsByEstablishment(
-            dayjs(date).format('YYYY-MM-DD'), //pass only the date component to query the Reva Api
-            duration,
-            court.establishmentId
-        );
-        establishments.push({
-            establishmentId: court.establishmentId,
-            name: court.name,
-            availableCourts: response,
-        });
-    }
+    //Get all available courts at that date
+    const establishments = await getAllCourts(date, duration);
 
-    // Find the courts that are available at the desired time or closer to it
+    // Find the courts that are available at the desired time
     const availableEstablishmentsAtTime = getAvailableEstablishmentsAtTime(
         establishments,
         dateObj
@@ -65,16 +53,77 @@ export const handler = ApiHandler(async (event) => {
         courts: availableEstablishmentsAtTime,
     } as GetCourtsResponse;
 
-    console.log(JSON.stringify(response));
-
     return {
         statusCode: 200,
         body: JSON.stringify(response),
     };
 });
 
+//TODO: Cache this for x minutes to avoid querying the Reva API too often
+async function getAllCourts(
+    date: string,
+    duration: number
+): Promise<Establishment[]> {
+    const establishments: Establishment[] = [];
+    // Create a cookie jar
+    const jar = new CookieJar();
+    const client = wrapper(axios.create({ jar }));
+
+    await client.get(`${baseUrl}/club-padelbo`); //It can be any club. We just need to get the cookies
+
+    // Get the available courts for all establishments
+    for (const court of courts) {
+        const response = await getCourtsByEstablishment(
+            dayjs(date).format('YYYY-MM-DD'), //Pass only the date component to query the Reva Api
+            duration,
+            court.establishmentId,
+            jar
+        );
+        establishments.push({
+            establishmentId: court.establishmentId,
+            name: court.name,
+            availableCourts: response,
+        });
+    }
+    return establishments;
+}
+
+async function getCourtsByEstablishment(
+    date: string,
+    duration: number,
+    establishmentId: number,
+    jar: CookieJar
+): Promise<RevaResponse[]> {
+    try {
+        const payload = {
+            establishment_id: establishmentId,
+            duration: duration,
+            date: date,
+        };
+
+        const apiUrl = `${baseUrl}/get-times`;
+
+        //TODO: Filter by only padel courts
+        const cookies = jar.getCookiesSync(`${baseUrl}/`);
+        const xsrfToken = cookies.find((cookie) => cookie.key === 'XSRF-TOKEN');
+        const laravelSession = cookies.find(
+            (cookie) => cookie.key === 'laravel_session'
+        );
+        const response = await axios.post(apiUrl, payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                cookie: `laravel_session=${laravelSession?.value}`,
+                'x-xsrf-token': xsrfToken?.value.slice(0, -3), //Remove the %3D at the end
+            },
+        });
+        return response.data as RevaResponse[];
+    } catch (error) {
+        return [];
+    }
+}
+
 function getAvailableEstablishmentsAtTime(
-    establishments: RevaEstablishment[],
+    establishments: Establishment[],
     date: dayjs.Dayjs
 ): AvailableEstablishment[] {
     const availableEstablishmentsAtTime: AvailableEstablishment[] = [];
@@ -83,7 +132,7 @@ function getAvailableEstablishmentsAtTime(
             // Get the schedule that starts at the desired time
             const startDate = dayjs(schedule.start);
             if (date.isSame(startDate)) {
-                // Get the number of available courts. TODO: Filter by other criterias
+                // Get the number of available courts.
                 const availableCourts = schedule.fields.filter(
                     (field) => field.available
                 );
@@ -96,35 +145,4 @@ function getAvailableEstablishmentsAtTime(
         }
     }
     return availableEstablishmentsAtTime;
-}
-
-async function getCourtsByEstablishment(
-    date: string,
-    duration: number,
-    establishmentId: number
-): Promise<RevaResponse[]> {
-    try {
-        const payload = {
-            establishment_id: establishmentId,
-            duration: duration,
-            date: date,
-        };
-
-        const apiUrl = 'https://clubs.reva.la/get-times';
-
-        //TODO: Filter by only padel courts
-        //TODO: retrieve x-xsrf-token and laravel_session dinamically
-        const response = await axios.post(apiUrl, payload, {
-            headers: {
-                'Content-Type': 'application/json',
-                cookie: 'laravel_session=eyJpdiI6Ilp4cmFlRzVkRStUVHdQVDlwM1NPV3c9PSIsInZhbHVlIjoid29FRVpxakdjTVc2eWRmTC9tL0dCeWdrRk9uTjF1c1QvVGZ5dVBYN3pad0d0RVV3cmdYN001a3VadjU2UjE3NG82Tm8wb0NsVVAzY0s1YjRRMmFvazJnS3FyOVd1a2dJUGF5UEpZQTJlbVBVZE9aaHg5TWVDcVpXUEhpekxyWG0iLCJtYWMiOiIwYWIxYjIzZWIwYTFkZjY2NThjYWVmOTZhMjRhNTljYjI3NzY5NmYwZmJhNjIxZGQ4ZWM3ODM4OTI1Yjk0NWI3In0%3D',
-                // Add any other headers you might need
-                'x-xsrf-token':
-                    'eyJpdiI6ImsvclpYN3YzYUp3ekNrYzU3ODFJMkE9PSIsInZhbHVlIjoiUHZoQlBCYzI1Vm4zTHJqQTA0QTZTaHBHVXBCMUJyQi9vbk00QitWQlVkQXFadmloYlB6NGVXZkE5NlZSendPZWRqQVBnR2hkRFl2aktveDBySnIvNEpTNE45TGVycUxrdVdVZ2V6WXZ4YjlFdW5KVkduWTdXYVVSMVNpcEt5K28iLCJtYWMiOiI3MmQ5YWM5YTIzN2ExZGFjZmNkOWNkZjE2YWQ0Mjg2N2Y3NmJlYjY2MGE0ZDdhYjBkNTM3MWQzNzU1M2U2NDgzIn0',
-            },
-        });
-        return response.data as RevaResponse[];
-    } catch (error) {
-        return [];
-    }
 }

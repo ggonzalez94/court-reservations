@@ -8,4 +8,5 @@ export const courts: Court[] = [
     { name: 'Costanera Sur', establishmentId: 496 },
     { name: 'Costanera Norte', establishmentId: 489 },
     { name: 'Padel Lounge', establishmentId: 498 },
+    { name: 'Santa Cruz Padel Club', establishmentId: 510 },
 ];
