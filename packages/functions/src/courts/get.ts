@@ -3,7 +3,9 @@ import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
 import dayjs from 'dayjs';
 import Joi from 'joi';
+import AWS from 'aws-sdk';
 import { ApiHandler, useQueryParams } from 'sst/node/api';
+import { Table } from 'sst/node/table';
 import { courts } from '@padel-reservations/core/courts';
 import { baseUrl } from '../reva/constants';
 import {
@@ -12,6 +14,10 @@ import {
     GetCourtsResponse,
 } from './types';
 import { RevaResponse, Establishment } from '../reva/types';
+
+const EXPIRY_TIME = 600; // 10 minutes
+const CACHE_KEY = 'establishments';
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 export const handler = ApiHandler(async (event) => {
     // Validate the request
@@ -59,12 +65,22 @@ export const handler = ApiHandler(async (event) => {
     };
 });
 
-//TODO: Cache this for x minutes to avoid querying the Reva API too often
 async function getAllCourts(
     date: string,
     duration: number
 ): Promise<Establishment[]> {
     const establishments: Establishment[] = [];
+    const getParams = {
+        TableName: Table.Cache.tableName,
+        Key: {
+            key: CACHE_KEY,
+        },
+    };
+    const result = await dynamoDb.get(getParams).promise();
+    if (result.Item) {
+        //Serve directly from the cache
+        return JSON.parse(result.Item.data) as Establishment[];
+    }
     // Create a cookie jar
     const jar = new CookieJar();
     const client = wrapper(axios.create({ jar }));
@@ -85,6 +101,17 @@ async function getAllCourts(
             availableCourts: response,
         });
     }
+
+    // Store in the cache before returning
+    const putParams = {
+        TableName: Table.Cache.tableName,
+        Item: {
+            key: CACHE_KEY,
+            data: JSON.stringify(establishments),
+            expiresAt: Math.floor(Date.now() / 1000) + EXPIRY_TIME, // EXPIRY_TIME from now
+        },
+    };
+    await dynamoDb.put(putParams).promise();
     return establishments;
 }
 
