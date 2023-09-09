@@ -1,4 +1,4 @@
-import { StackContext, Api, Table } from 'sst/constructs';
+import { StackContext, Api, Table, Config } from 'sst/constructs';
 
 export function API({ stack }: StackContext) {
     // Use DynamoDB as a serverless cache
@@ -14,6 +14,10 @@ export function API({ stack }: StackContext) {
         timeToLiveAttribute: 'expiresAt',
     });
 
+    // Secrets
+    const OPENAI_API_KEY = new Config.Secret(stack, 'OpenAI_API_KEY');
+
+    // API
     const api = new Api(stack, 'api', {
         defaults: {
             function: {
@@ -23,6 +27,13 @@ export function API({ stack }: StackContext) {
         routes: {
             'GET /': 'packages/functions/src/lambda.handler',
             'GET /courts': 'packages/functions/src/courts/get.handler',
+            'POST /courts-input': {
+                function: {
+                    handler:
+                        'packages/functions/src/input/generate-court-input.handler',
+                    bind: [OPENAI_API_KEY],
+                },
+            },
         },
     });
 

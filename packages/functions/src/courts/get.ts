@@ -14,6 +14,7 @@ import {
     GetCourtsResponse,
 } from './types';
 import { RevaResponse, Establishment } from '../reva/types';
+import { BadRequest, Success } from 'src/common/http-response';
 
 const EXPIRY_TIME = 600; // 10 minutes
 const CACHE_KEY = 'establishments';
@@ -32,14 +33,7 @@ export const handler = ApiHandler(async (event) => {
 
     const { error, value } = queryParamSchema.validate(params);
     if (error) {
-        //TODO: define 400 error response schema
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: 'Invalid query parameters',
-                details: error.details,
-            }),
-        };
+        return BadRequest(JSON.stringify(error.details));
     }
     const { duration, date } = value as GetCourtsRequest;
     const dateObj = dayjs(date);
@@ -59,10 +53,7 @@ export const handler = ApiHandler(async (event) => {
         courts: availableEstablishmentsAtTime,
     } as GetCourtsResponse;
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify(response),
-    };
+    return Success(response);
 });
 
 async function getAllCourts(
