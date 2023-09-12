@@ -1,4 +1,4 @@
-import { StackContext, Api, Table, Config } from 'sst/constructs';
+import { StackContext, Api, Table, Config, NextjsSite } from 'sst/constructs';
 
 export function API({ stack }: StackContext) {
     // Use DynamoDB as a serverless cache
@@ -37,8 +37,14 @@ export function API({ stack }: StackContext) {
         },
     });
 
+    const site = new NextjsSite(stack, 'site', {
+        path: 'packages/frontend',
+        bind: [api],
+    });
+
     stack.addOutputs({
         CacheTable: cacheTable.tableName,
         ApiEndpoint: api.url,
+        SiteUrl: site.url,
     });
 }
