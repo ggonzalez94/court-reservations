@@ -1,6 +1,9 @@
 import { ApiHandler, useJsonBody } from 'sst/node/api';
 import { Config } from 'sst/node/config';
 import Joi from 'joi';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import OpenAI from 'openai';
 import { GenerateCourtsInputResponse } from './types';
 import { BadRequest, Success } from 'src/common/http-response';
@@ -29,11 +32,27 @@ export const handler = ApiHandler(async (event) => {
         apiKey: Config.OpenAI_API_KEY,
     });
     //Build request to send to OpenAI
+    dayjs.extend(utc);
+    dayjs.extend(timezone);
+    const currentDate = dayjs().tz('America/La_Paz').format();
     const messages = [
         {
             role: 'system',
             content:
-                'You are an assistant to help people book padel courts at their desired time, date and duration. You should try to extract the required parameters from the function call or ask them questions that will lead them to provide you those inputs. Make sure the user always provides both date and time as well as duration. Conversations will always be in spanish',
+                'You are an assistant to help people book padel courts at their desired time, date and duration. ',
+        },
+        {
+            role: 'system',
+            content:
+                'You should ask the questions needed so that they provide time, date and duration. You will extract those parameters from their requests',
+        },
+        {
+            role: 'system',
+            content: `The current time is ${currentDate}`,
+        },
+        {
+            role: 'system',
+            content: 'Conversations will always be in spanish',
         },
         ...value,
     ];
