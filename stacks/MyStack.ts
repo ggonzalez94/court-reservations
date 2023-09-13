@@ -39,7 +39,9 @@ export function API({ stack }: StackContext) {
 
     const site = new NextjsSite(stack, 'site', {
         path: 'packages/frontend',
-        bind: [api],
+        environment: {
+            NEXT_PUBLIC_API_BASE_URL: api.url,
+        },
     });
 
     stack.addOutputs({

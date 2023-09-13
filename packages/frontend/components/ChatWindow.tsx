@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import useAutoResizeTextArea from '@/hooks/useAutoResizeTextArea';
 import { FiSend } from 'react-icons/fi';
 import Message from './Message';
+import { GenerateCourtsInputResponse } from '../utils/types';
 
-const Chat = (props: any) => {
-    const { toggleComponentVisibility } = props;
-
+const ChatWindow = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showEmptyChat, setShowEmptyChat] = useState(true);
@@ -26,8 +25,32 @@ const Chat = (props: any) => {
         }
     }, [conversation]);
 
-    const sendMessage = async (e: any) => {
-        e.preventDefault();
+    const requestCourtInput = async (
+        message: string
+    ): Promise<GenerateCourtsInputResponse | string> => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        const response = await fetch(`${baseUrl}/courts-input`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([
+                ...conversation,
+                { content: message, role: 'user' },
+            ]),
+        });
+
+        if (response.ok) {
+            const data = (await response.json()) as GenerateCourtsInputResponse;
+            return data;
+        } else {
+            console.error(response);
+            return response.statusText;
+        }
+    };
+
+    const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
 
         // Don't send empty messages
         if (message.length < 1) {
@@ -43,12 +66,26 @@ const Chat = (props: any) => {
         setConversation([
             ...conversation,
             { content: message, role: 'user' },
-            { content: 'The reply comes here', role: 'system' },
+            { content: null, role: 'assistant' },
         ]);
 
         // Clear the message & remove empty chat
         setMessage('');
         setShowEmptyChat(false);
+
+        // Send the message to the our api
+        const response = await requestCourtInput(message);
+
+        if (typeof response !== 'string') {
+            // Add the message to the conversation
+            setConversation([
+                ...conversation,
+                { content: message, role: 'user' },
+                { content: response.message, role: 'assistant' },
+            ]);
+        } else {
+            setErrorMessage(response);
+        }
         setIsLoading(false);
     };
 
@@ -122,4 +159,4 @@ const Chat = (props: any) => {
     );
 };
 
-export default Chat;
+export default ChatWindow;
