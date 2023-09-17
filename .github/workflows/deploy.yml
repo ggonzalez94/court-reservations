@@ -1,0 +1,47 @@
+name: Deploy Environment
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: 'Deployment environment'
+                required: true
+                default: 'dev'
+
+# concurrency group name ensures concurrent workflow runs wait for any in-progress job to finish
+concurrency: merge-${{ github.ref }}
+
+# permission can be added at job level or workflow level
+permissions:
+    id-token: write # This is required for requesting the JWT
+    contents: read # This is required for actions/checkout
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v2
+              with:
+                  node-version: '16.x'
+
+            - name: Cache Yarn cache
+              uses: actions/cache@v2
+              with:
+                  path: ~/.yarn/cache
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
+
+            - name: Install dependencies
+              run: yarn install
+
+            - name: Set secrets
+              run: yarn sst secrets set OpenAI_API_KEY ${{ secrets.OPENAI_API_KEY }} --stage ${{ github.event.inputs.environment }}
+
+            - name: Deploy to Dev Environment
+              run: yarn deploy --stage ${{ github.event.inputs.environment }}
