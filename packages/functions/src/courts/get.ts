@@ -67,7 +67,9 @@ async function getAllCourts(
     const getParams = {
         TableName: Table.Cache.tableName,
         Key: {
-            key: CACHE_KEY,
+            key: `${CACHE_KEY}-${dayjs(date).format(
+                'YYYY-MM-DD'
+            )}-${duration}}`,
         },
     };
     const result = await dynamoDb.get(getParams).promise();
@@ -100,7 +102,9 @@ async function getAllCourts(
     const putParams = {
         TableName: Table.Cache.tableName,
         Item: {
-            key: CACHE_KEY,
+            key: `${CACHE_KEY}-${dayjs(date).format(
+                'YYYY-MM-DD'
+            )}-${duration}}`,
             data: JSON.stringify(establishments),
             expiresAt: Math.floor(Date.now() / 1000) + EXPIRY_TIME, // EXPIRY_TIME from now
         },
