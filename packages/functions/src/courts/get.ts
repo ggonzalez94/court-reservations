@@ -2,6 +2,8 @@ import axios from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import Joi from 'joi';
 import AWS from 'aws-sdk';
 import { ApiHandler, useQueryParams } from 'sst/node/api';
@@ -61,6 +63,7 @@ async function getAllCourts(
     duration: number
 ): Promise<Establishment[]> {
     const establishments: Establishment[] = [];
+    //TODO: The cache should include the duration and the date
     const getParams = {
         TableName: Table.Cache.tableName,
         Key: {
@@ -136,6 +139,8 @@ async function getCourtsByEstablishment(
         });
         return response.data as RevaResponse[];
     } catch (error) {
+        console.error(`Error retrieving data for court ${establishmentId}:`);
+        console.error(error);
         return [];
     }
 }
@@ -148,7 +153,9 @@ function getAvailableEstablishmentsAtTime(
     for (const establishment of establishments) {
         for (const schedule of establishment.availableCourts) {
             // Get the schedule that starts at the desired time
-            const startDate = dayjs(schedule.start);
+            dayjs.extend(utc);
+            dayjs.extend(timezone);
+            const startDate = dayjs.tz(schedule.start, 'America/La_Paz'); //The time retrieved from the api does not have timezone
             if (date.isSame(startDate)) {
                 // Get the number of available courts.
                 const availableCourts = schedule.fields.filter(

@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import useAutoResizeTextArea from '@/hooks/useAutoResizeTextArea';
 import { FiSend } from 'react-icons/fi';
 import Message from './Message';
-import { GenerateCourtsInputResponse } from '../utils/types';
+import { GenerateCourtsInputResponse, GetCourtsResponse } from '../utils/types';
 
 const ChatWindow = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -10,6 +10,7 @@ const ChatWindow = () => {
     const [showEmptyChat, setShowEmptyChat] = useState(true);
     const [conversation, setConversation] = useState<any[]>([]);
     const [message, setMessage] = useState('');
+    const [courts, setCourts] = useState<any[]>([]);
     const textAreaRef = useAutoResizeTextArea();
     const bottomOfChatRef = useRef<HTMLDivElement>(null);
 
@@ -49,6 +50,33 @@ const ChatWindow = () => {
         }
     };
 
+    const getAvailableCourts = async (
+        date: string,
+        duration: string
+    ): Promise<GetCourtsResponse | string> => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        const queryString = new URLSearchParams({ date, duration }).toString();
+        const response = await fetch(`${baseUrl}/courts?${queryString}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (response.ok) {
+            const data = (await response.json()) as GetCourtsResponse;
+            return data;
+        } else {
+            console.error(response);
+            return response.statusText;
+        }
+    };
+
+    // If OpenAI was able to process the request and return parameters
+    const isInputReady = (input: GenerateCourtsInputResponse): boolean => {
+        return input.parameters !== null;
+    };
+
     const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
@@ -76,16 +104,43 @@ const ChatWindow = () => {
         // Send the message to the our api
         const response = await requestCourtInput(message);
 
-        if (typeof response !== 'string') {
+        if (typeof response === 'string') {
+            setErrorMessage(response);
+            setIsLoading(false);
+            return;
+        }
+
+        if (!isInputReady(response)) {
             // Add the message to the conversation
             setConversation([
                 ...conversation,
                 { content: message, role: 'user' },
                 { content: response.message, role: 'assistant' },
             ]);
-        } else {
-            setErrorMessage(response);
+            setIsLoading(false);
+            return;
         }
+
+        // Get the available courts
+        const availableCourts = await getAvailableCourts(
+            response.parameters.date,
+            response.parameters.duration.toString()
+        );
+
+        if (typeof response === 'string') {
+            setErrorMessage(response);
+            setIsLoading(false);
+            return;
+        }
+        setConversation([
+            ...conversation,
+            { content: message, role: 'user' },
+            {
+                content: 'Encontré estas canchas disponibles:',
+                role: 'courtList',
+            },
+        ]);
+        setCourts((availableCourts as GetCourtsResponse).courts);
         setIsLoading(false);
     };
 
@@ -110,7 +165,11 @@ const ChatWindow = () => {
                     // Else, display the chat messages
                     <div className="flex flex-col items-center text-sm bg-gray-800">
                         {conversation.map((msg, index) => (
-                            <Message key={index} message={msg} />
+                            <Message
+                                key={index}
+                                message={msg}
+                                courts={courts}
+                            />
                         ))}
                         {/* Scroll-to-bottom reference */}
                         <div ref={bottomOfChatRef}></div>

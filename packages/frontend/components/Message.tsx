@@ -1,13 +1,26 @@
+import React from 'react';
 import { GiTennisCourt } from 'react-icons/gi';
 import { HiUser } from 'react-icons/hi';
 import { TbCursorText } from 'react-icons/tb';
-GiTennisCourt;
 
-const Message = (props: any) => {
-    const { message } = props;
+type Message = { role: string; content: string };
+type Court = {
+    establishmentId: number;
+    name: string;
+    numberOfAvailableCourts: number;
+};
+type Props = {
+    message: Message;
+    courts?: Court[]; // Optional, you might not always have this information
+};
+
+const Message = (props: Props) => {
+    const { message, courts } = props;
     const { role, content: text } = message;
+    console.log(JSON.stringify(courts));
 
     const isUser = role === 'user';
+    const isCourtList = role === 'courtList';
 
     return (
         <div
@@ -25,25 +38,26 @@ const Message = (props: any) => {
                                 <GiTennisCourt className="h-4 w-4 text-white" />
                             )}
                         </div>
-                        <div className="text-xs flex items-center justify-center gap-1 absolute left-0 top-2 -ml-4 -translate-x-full group-hover:visible !invisible">
-                            <button
-                                disabled
-                                className="text-gray-300 dark:text-gray-400"
-                            ></button>
-                            <span className="flex-grow flex-shrink-0">
-                                1 / 1
-                            </span>
-                            <button
-                                disabled
-                                className="text-gray-300 dark:text-gray-400"
-                            ></button>
-                        </div>
                     </div>
                     <div className="relative flex w-[calc(100%-50px)] flex-col gap-1 md:gap-3 lg:w-[calc(100%-115px)]">
                         <div className="flex flex-grow flex-col gap-3">
                             <div className="min-h-20 flex flex-col items-start gap-4 whitespace-pre-wrap break-words">
                                 <div className="markdown prose w-full break-words dark:prose-invert dark">
-                                    {!isUser && text === null ? (
+                                    {courts &&
+                                    courts.length > 0 &&
+                                    isCourtList ? (
+                                        <ul>
+                                            {courts.map((court) => (
+                                                <li key={court.establishmentId}>
+                                                    {court.name} - Canchas
+                                                    disponibles:{' '}
+                                                    {
+                                                        court.numberOfAvailableCourts
+                                                    }
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : !isUser && text === null ? (
                                         <TbCursorText className="h-6 w-6 animate-pulse" />
                                     ) : (
                                         <p>{text}</p>
