@@ -72,9 +72,9 @@ async function getAllCourts(
     const getParams = {
         TableName: Table.Cache.tableName,
         Key: {
-            key: `${CACHE_KEY}-${dayjs(date).format(
-                'YYYY-MM-DD'
-            )}-${duration}}`,
+            key: `${CACHE_KEY}-${dayjs(date)
+                .tz(date)
+                .format('YYYY-MM-DD')}-${duration}}`,
         },
     };
     const result = await dynamoDb.get(getParams).promise();
@@ -91,7 +91,7 @@ async function getAllCourts(
     // Get the available courts for all establishments
     for (const court of courts) {
         const response = await getCourtsByEstablishment(
-            dayjs(date).format('YYYY-MM-DD'), //Pass only the date component to query the Reva Api
+            dayjs(date).tz(date).format('YYYY-MM-DD'), //Pass only the date component to query the Reva Api
             duration,
             court.establishmentId,
             jar
@@ -107,9 +107,9 @@ async function getAllCourts(
     const putParams = {
         TableName: Table.Cache.tableName,
         Item: {
-            key: `${CACHE_KEY}-${dayjs(date).format(
-                'YYYY-MM-DD'
-            )}-${duration}}`,
+            key: `${CACHE_KEY}-${dayjs(date)
+                .tz(date)
+                .format('YYYY-MM-DD')}-${duration}}`,
             data: JSON.stringify(establishments),
             expiresAt: Math.floor(Date.now() / 1000) + EXPIRY_TIME, // EXPIRY_TIME from now
         },
