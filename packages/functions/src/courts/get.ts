@@ -18,6 +18,11 @@ import {
 import { RevaResponse, Establishment } from '../reva/types';
 import { BadRequest, Success } from 'src/common/http-response';
 
+// Use dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('America/La_Paz');
+
 const EXPIRY_TIME = 600; // 10 minutes
 const CACHE_KEY = 'establishments';
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -157,8 +162,6 @@ function getAvailableEstablishmentsAtTime(
     for (const establishment of establishments) {
         for (const schedule of establishment.availableCourts) {
             // Get the schedule that starts at the desired time
-            dayjs.extend(utc);
-            dayjs.extend(timezone);
             const startDate = dayjs.tz(schedule.start, 'America/La_Paz'); //The time retrieved from the api does not have timezone
             if (date.isSame(startDate)) {
                 // Get the number of available courts.
