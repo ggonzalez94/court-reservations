@@ -72,7 +72,7 @@ async function getAllCourts(
     const getParams = {
         TableName: Table.Cache.tableName,
         Key: {
-            key: `${CACHE_KEY}-${dayjs(date)
+            key: `${CACHE_KEY}-${dayjs
                 .tz(date)
                 .format('YYYY-MM-DD')}-${duration}}`,
         },
@@ -91,7 +91,7 @@ async function getAllCourts(
     // Get the available courts for all establishments
     for (const court of courts) {
         const response = await getCourtsByEstablishment(
-            dayjs(date).tz(date).format('YYYY-MM-DD'), //Pass only the date component to query the Reva Api
+            dayjs.tz(date).format('YYYY-MM-DD'), //Pass only the date component to query the Reva Api
             duration,
             court.establishmentId,
             jar
@@ -107,7 +107,7 @@ async function getAllCourts(
     const putParams = {
         TableName: Table.Cache.tableName,
         Item: {
-            key: `${CACHE_KEY}-${dayjs(date)
+            key: `${CACHE_KEY}-${dayjs
                 .tz(date)
                 .format('YYYY-MM-DD')}-${duration}}`,
             data: JSON.stringify(establishments),
