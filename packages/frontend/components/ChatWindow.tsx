@@ -197,7 +197,7 @@ const ChatWindow = () => {
                             <textarea
                                 ref={textAreaRef}
                                 value={message}
-                                placeholder="Envia tu mensaje... Puede ser algo como quiero jugar padel mañana a las 7am"
+                                placeholder="Envia tu mensaje... Puede ser algo como quiero jugar padel mañana a las 7am por 1 hora."
                                 className="flex-1 rounded-md dark:bg-gray-700 resize-none"
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeypress}

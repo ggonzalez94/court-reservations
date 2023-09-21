@@ -8,6 +8,7 @@ type Court = {
     establishmentId: number;
     name: string;
     numberOfAvailableCourts: number;
+    reservationLink: string;
 };
 type Props = {
     message: Message;
@@ -39,21 +40,31 @@ const Message = (props: Props) => {
                             )}
                         </div>
                     </div>
-                    <div className="relative flex w-[calc(100%-50px)] flex-col gap-1 md:gap-3 lg:w-[calc(100%-115px)]">
+                    <div className="relative flex flex-col gap-1 md:gap-3">
                         <div className="flex flex-grow flex-col gap-3">
                             <div className="min-h-20 flex flex-col items-start gap-4 whitespace-pre-wrap break-words">
-                                <div className="markdown prose w-full break-words dark:prose-invert dark">
+                                <div className="prose dark:prose-invert w-full break-words">
                                     {courts &&
                                     courts.length > 0 &&
                                     isCourtList ? (
-                                        <ul>
+                                        <ul className="list-none p-0">
                                             {courts.map((court) => (
-                                                <li key={court.establishmentId}>
-                                                    {court.name} - Canchas
-                                                    disponibles:{' '}
-                                                    {
-                                                        court.numberOfAvailableCourts
-                                                    }
+                                                <li
+                                                    key={court.establishmentId}
+                                                    className="mb-2"
+                                                >
+                                                    <a
+                                                        href={
+                                                            court.reservationLink
+                                                        }
+                                                        className="block p-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300"
+                                                    >
+                                                        {court.name} - Canchas
+                                                        disponibles:{' '}
+                                                        {
+                                                            court.numberOfAvailableCourts
+                                                        }
+                                                    </a>
                                                 </li>
                                             ))}
                                         </ul>

@@ -12,5 +12,6 @@ export interface GetCourtsResponse {
 export interface AvailableEstablishment {
     establishmentId: number;
     name: string;
+    reservationLink: string;
     numberOfAvailableCourts: number;
 }

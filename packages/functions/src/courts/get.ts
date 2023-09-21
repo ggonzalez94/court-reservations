@@ -28,6 +28,7 @@ const CACHE_KEY = 'establishments';
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 export const handler = ApiHandler(async (event) => {
+    console.log('Starting request...');
     // Validate the request
     const params = useQueryParams() as Partial<GetCourtsRequest>;
     const defaultDate = dayjs().add(1, 'hour').minute(0).second(0).format(); //default to next hour
@@ -46,9 +47,11 @@ export const handler = ApiHandler(async (event) => {
     const dateObj = dayjs(date);
 
     //Get all available courts at that date
+    console.log('Getting all courts...');
     const establishments = await getAllCourts(date, duration);
 
     // Find the courts that are available at the desired time
+    console.log('Filtering establishments by time...');
     const availableEstablishmentsAtTime = getAvailableEstablishmentsAtTime(
         establishments,
         dateObj
@@ -82,11 +85,12 @@ async function getAllCourts(
         //Serve directly from the cache
         return JSON.parse(result.Item.data) as Establishment[];
     }
+    console.log('Cache is empty. Retrieving data from Reva...');
     // Create a cookie jar
     const jar = new CookieJar();
     const client = wrapper(axios.create({ jar }));
 
-    await client.get(`${baseUrl}/club-padelbo`); //It can be any club. We just need to get the cookies
+    await client.get(`${baseUrl}/costanera-padel-club-sur`); //It can be any club. We just need to get the cookies
 
     // Get the available courts for all establishments
     for (const court of courts) {
@@ -100,6 +104,7 @@ async function getAllCourts(
             establishmentId: court.establishmentId,
             name: court.name,
             availableCourts: response,
+            link: court.link,
         });
     }
 
@@ -133,7 +138,6 @@ async function getCourtsByEstablishment(
 
         const apiUrl = `${baseUrl}/get-times`;
 
-        //TODO: Filter by only padel courts
         const cookies = jar.getCookiesSync(`${baseUrl}/`);
         const xsrfToken = cookies.find((cookie) => cookie.key === 'XSRF-TOKEN');
         const laravelSession = cookies.find(
@@ -146,7 +150,20 @@ async function getCourtsByEstablishment(
                 'x-xsrf-token': xsrfToken?.value.slice(0, -3), //Remove the %3D at the end
             },
         });
-        return response.data as RevaResponse[];
+
+        //Exclude all soccer fields(Reva only provides the size to differentiate between padel and soccer)
+        const filteredResponse: RevaResponse[] = response.data.map(
+            (response: RevaResponse) => {
+                const updatedFields = response.fields.filter(
+                    (field) => field.size !== '7v7'
+                );
+                return {
+                    ...response,
+                    fields: updatedFields,
+                };
+            }
+        );
+        return filteredResponse;
     } catch (error) {
         console.error(`Error retrieving data for court ${establishmentId}:`);
         console.error(error);
@@ -172,6 +189,7 @@ function getAvailableEstablishmentsAtTime(
                     establishmentId: establishment.establishmentId,
                     name: establishment.name,
                     numberOfAvailableCourts: availableCourts.length,
+                    reservationLink: establishment.link,
                 });
             }
         }

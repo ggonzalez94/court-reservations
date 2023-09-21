@@ -26,5 +26,6 @@ export interface RevaField {
 export interface Establishment {
     establishmentId: number;
     name: string;
+    link: string;
     availableCourts: RevaResponse[];
 }

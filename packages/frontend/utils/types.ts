@@ -21,4 +21,5 @@ export interface AvailableEstablishment {
     establishmentId: number;
     name: string;
     numberOfAvailableCourts: number;
+    reservationLink: string;
 }
