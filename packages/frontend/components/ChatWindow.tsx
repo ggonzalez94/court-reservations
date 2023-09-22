@@ -153,13 +153,13 @@ const ChatWindow = () => {
     };
 
     return (
-        <div className="flex flex-col h-full max-w-full">
+        <div className="flex flex-col h-[100svh] max-w-full">
             {/* Chat messages area */}
             <div className="flex-1 overflow-y-auto dark:bg-gray-800">
                 {/* If the chat is empty, show a default message */}
                 {showEmptyChat ? (
                     <div className="h-full flex items-center justify-center text-2xl sm:text-4xl font-semibold text-gray-200">
-                        Reserva tu cancha de Padel
+                        Reservá tu cancha de Padel
                     </div>
                 ) : (
                     // Else, display the chat messages
