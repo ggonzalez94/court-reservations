@@ -153,9 +153,9 @@ const ChatWindow = () => {
     };
 
     return (
-        <div className="flex flex-col h-[100svh] max-w-full">
+        <div className="flex fixed flex-col h-[100svh] w-full">
             {/* Chat messages area */}
-            <div className="flex-1 overflow-y-auto dark:bg-gray-800">
+            <div className="flex-1 overflow-y-auto bg-gray-800">
                 {/* If the chat is empty, show a default message */}
                 {showEmptyChat ? (
                     <div className="h-full flex items-center justify-center text-2xl sm:text-4xl font-semibold text-gray-200">
@@ -179,7 +179,7 @@ const ChatWindow = () => {
 
             {/* Chat input form */}
             { courts.length === 0 &&
-                <div className="border-t dark:border-white/20 bg-white dark:bg-gray-800">
+                <div className="border-t border-white/20 bg-gray-800">
                     <form
                         className="m-2 flex gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl"
                         onSubmit={sendMessage}
@@ -193,12 +193,12 @@ const ChatWindow = () => {
                             )}
 
                             {/* Textarea and button container */}
-                            <div className="flex p-4 flex-row items-center w-full py-2 flex-grow md:py-3 md:pl-4 relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-gray-700 rounded-md shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:shadow-[0_0_15px_rgba(0,0,0,0.10)]">
+                            <div className="flex p-4 flex-row items-center w-full py-2 flex-grow md:py-3 md:pl-4 relative border border-black/10 border-gray-900/50 text-white bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]">
                                 {/* Textarea for chat input */}
                                 <textarea
                                     ref={textAreaRef}
                                     value={message}
-                                    placeholder="Envia tu mensaje"
+                                    placeholder="Enviá tu mensaje"
                                     className="flex-1 rounded-md dark:bg-gray-700 resize-none"
                                     onChange={(e) => setMessage(e.target.value)}
                                     onKeyDown={handleKeypress}

@@ -2,7 +2,7 @@ import ChatWindow from '../components/ChatWindow';
 
 const Home = () => {
     return (
-        <main className="overflow-hidden w-full h-screen relative">
+        <main className="bg-gray-800">
             <ChatWindow />
         </main>
     );
