@@ -33,4 +33,9 @@ export const courts: Court[] = [
         establishmentId: 518,
         link: `${BASE_URL}/costanera-padel-club-central`,
     },
+    {
+        name: 'Cape Padel',
+        establishmentId: 519,
+        link: `${BASE_URL}/cape-padel`,
+    },
 ];
