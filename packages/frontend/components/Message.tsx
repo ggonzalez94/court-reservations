@@ -47,27 +47,30 @@ const Message = (props: Props) => {
                                     {courts &&
                                     courts.length > 0 &&
                                     isCourtList ? (
-                                        <ul className="list-none p-0">
-                                            {courts.map((court) => (
-                                                <li
-                                                    key={court.establishmentId}
-                                                    className="mb-2"
-                                                >
-                                                    <a
-                                                        href={
-                                                            court.reservationLink
-                                                        }
-                                                        className="block p-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300"
+                                        <>
+                                            <p className="pb-2">Hacé click para reservar</p>
+                                            <ul className="list-none p-0">
+                                                {courts.map((court) => (
+                                                    <li
+                                                        key={court.establishmentId}
+                                                        className="mb-2"
                                                     >
-                                                        {court.name} - Canchas
-                                                        disponibles:{' '}
-                                                        {
-                                                            court.numberOfAvailableCourts
-                                                        }
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                                        <a
+                                                            href={
+                                                                court.reservationLink
+                                                            }
+                                                            className="block p-2 rounded-md bg-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 dark:bg-gray-600 sm:bg-inherit  transition duration-300"
+                                                        >
+                                                            {court.name} - Canchas
+                                                            disponibles:{' '}
+                                                            {
+                                                                court.numberOfAvailableCourts
+                                                            }
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
                                     ) : !isUser && text === null ? (
                                         <TbCursorText className="h-6 w-6 animate-pulse" />
                                     ) : (
