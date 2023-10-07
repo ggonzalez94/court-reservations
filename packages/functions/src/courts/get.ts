@@ -108,18 +108,25 @@ async function getAllCourts(
         });
     }
 
-    // Store in the cache before returning
-    const putParams = {
-        TableName: Table.Cache.tableName,
-        Item: {
-            key: `${CACHE_KEY}-${dayjs
-                .tz(date)
-                .format('YYYY-MM-DD')}-${duration}}`,
-            data: JSON.stringify(establishments),
-            expiresAt: Math.floor(Date.now() / 1000) + EXPIRY_TIME, // EXPIRY_TIME from now
-        },
-    };
-    await dynamoDb.put(putParams).promise();
+    // If there's any available field store in the cache before returning
+    if (
+        establishments.some(
+            (establishment) => establishment.availableCourts.length > 0
+        )
+    ) {
+        const putParams = {
+            TableName: Table.Cache.tableName,
+            Item: {
+                key: `${CACHE_KEY}-${dayjs
+                    .tz(date)
+                    .format('YYYY-MM-DD')}-${duration}}`,
+                data: JSON.stringify(establishments),
+                expiresAt: Math.floor(Date.now() / 1000) + EXPIRY_TIME, // EXPIRY_TIME from now
+            },
+        };
+        await dynamoDb.put(putParams).promise();
+    }
+
     return establishments;
 }
 
@@ -140,13 +147,13 @@ async function getCourtsByEstablishment(
 
         const cookies = jar.getCookiesSync(`${baseUrl}/`);
         const xsrfToken = cookies.find((cookie) => cookie.key === 'XSRF-TOKEN');
-        const laravelSession = cookies.find(
-            (cookie) => cookie.key === 'laravel_session'
+        const revaSession = cookies.find(
+            (cookie) => cookie.key === 'reva_session'
         );
         const response = await axios.post(apiUrl, payload, {
             headers: {
                 'Content-Type': 'application/json',
-                cookie: `laravel_session=${laravelSession?.value}`,
+                cookie: `reva_session=${revaSession?.value}`,
                 'x-xsrf-token': xsrfToken?.value.slice(0, -3), //Remove the %3D at the end
             },
         });
