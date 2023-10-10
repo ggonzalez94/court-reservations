@@ -11,6 +11,7 @@ const ChatWindow = () => {
     const [conversation, setConversation] = useState<any[]>([]);
     const [message, setMessage] = useState('');
     const [courts, setCourts] = useState<any[]>([]);
+    const [conversationDone, setConversationDone] = useState(false); // This is used to reset the chat when the conversation is done
     const textAreaRef = useAutoResizeTextArea();
     const bottomOfChatRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +46,6 @@ const ChatWindow = () => {
             const data = (await response.json()) as GenerateCourtsInputResponse;
             return data;
         } else {
-            console.error(response);
             return response.statusText;
         }
     };
@@ -72,7 +72,16 @@ const ChatWindow = () => {
         }
     };
 
-    // If OpenAI was able to process the request and return parameters
+    const clearData = () => {
+        console.log('Clearing all data!');
+        setShowEmptyChat(true);
+        setConversation([]);
+        setMessage('');
+        setCourts([]);
+        setConversationDone(false);
+    };
+
+    // If OpenAI was able to process the request and return parameters to call the function
     const isInputReady = (input: GenerateCourtsInputResponse): boolean => {
         return input.parameters !== null;
     };
@@ -82,7 +91,7 @@ const ChatWindow = () => {
 
         // Don't send empty messages
         if (message.length < 1) {
-            setErrorMessage('Please enter a message.');
+            setErrorMessage('Por favor ingresa un mensaje.');
             return;
         } else {
             setErrorMessage('');
@@ -136,11 +145,14 @@ const ChatWindow = () => {
             ...conversation,
             { content: message, role: 'user' },
             {
-                content: 'Encontré estas canchas disponibles:',
+                // This message is displayed when no courts are available
+                content:
+                    'No encontré canchas disponibles a este horario. Por favor reiniciá la conversación e intentá nuevamente.',
                 role: 'courtList',
             },
         ]);
         setCourts((availableCourts as GetCourtsResponse).courts);
+        setConversationDone(true);
         setIsLoading(false);
     };
 
@@ -178,8 +190,8 @@ const ChatWindow = () => {
             </div>
 
             {/* Chat input form */}
-            { courts.length === 0 &&
-                <div className="border-t border-white/20 bg-gray-800">
+            <div className="border-t border-white/20 bg-gray-800">
+                {!conversationDone ? (
                     <form
                         className="m-2 flex gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl"
                         onSubmit={sendMessage}
@@ -214,8 +226,18 @@ const ChatWindow = () => {
                             </div>
                         </div>
                     </form>
-                </div>
-            }
+                ) : (
+                    // Conversation is done. Reset the chat
+                    <div className="m-2 md:mx-4 lg:mx-auto lg:max-w-2xl xl:max-w-3xl flex justify-center">
+                        <button
+                            onClick={clearData}
+                            className="px-4 py-2 bg-gray-500 text-white rounded-md"
+                        >
+                            Reiniciar la conversación
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

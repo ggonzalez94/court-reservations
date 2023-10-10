@@ -18,7 +18,6 @@ type Props = {
 const Message = (props: Props) => {
     const { message, courts } = props;
     const { role, content: text } = message;
-    console.log(JSON.stringify(courts));
 
     const isUser = role === 'user';
     const isCourtList = role === 'courtList';
@@ -48,11 +47,15 @@ const Message = (props: Props) => {
                                     courts.length > 0 &&
                                     isCourtList ? (
                                         <>
-                                            <p className="pb-2">Hacé click para reservar</p>
+                                            <p className="pb-2">
+                                                Hacé click para reservar
+                                            </p>
                                             <ul className="list-none p-0">
                                                 {courts.map((court) => (
                                                     <li
-                                                        key={court.establishmentId}
+                                                        key={
+                                                            court.establishmentId
+                                                        }
                                                         className="mb-2"
                                                     >
                                                         <a
@@ -61,8 +64,8 @@ const Message = (props: Props) => {
                                                             }
                                                             className="block p-2 rounded-md bg-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 dark:bg-gray-600 sm:bg-inherit  transition duration-300"
                                                         >
-                                                            {court.name} - Canchas
-                                                            disponibles:{' '}
+                                                            {court.name} -
+                                                            Canchas disponibles:{' '}
                                                             {
                                                                 court.numberOfAvailableCourts
                                                             }
