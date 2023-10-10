@@ -22,6 +22,7 @@ export function API({ stack }: StackContext) {
         defaults: {
             function: {
                 bind: [cacheTable],
+                timeout: 30, // API Gateway timeout is 21s - so this is more than enough
             },
         },
         routes: {
